@@ -1,0 +1,67 @@
+version: '3.5'
+ 
+services:
+  microservice-assinatura:
+    image: 957296915963.dkr.ecr.us-east-1.amazonaws.com/microservice-assinatura:latest
+    depends_on:
+      - "mongo"
+    environment:
+      - "MongoDbAssinaturaConfiguration__ConnectionString=mongodb://devs:gwEg4258npNjUGCArcTmZDF4h3HVY2es@host.docker.internal:27117/admin?ssl=false"
+      - "SnsConfiguration__ArnTopico=arn:aws:sns:us-east-1:000000000000:microservice-assinatura-assinatura-sns-topic"
+      - "SnsConfigurationContaCorrente__ArnTopico=arn:aws:sns:us-east-1:000000000000:microservice-assinatura-conta-corrente-sns-topic"
+      - "SnsConfiguration__ColaboradorIntegracaoBennerTopico=arn:aws:sns:us-east-1:000000000000:ColaboradorIntegracaoBennerTopicoLOCALSTACK"
+      - "AWS__Region=us-east-1"
+      - "AWS_ACCESS_KEY_ID=xxx"
+      - "AWS_SECRET_ACCESS_KEY=xxx"
+
+  microservice-contas-a-receber:
+    image: 957296915963.dkr.ecr.us-east-1.amazonaws.com/microservice-contas-a-receber:latest
+    depends_on:
+      - "mongo"
+    environment:
+      - "ContasReceberDatabaseSettings__ConnectionString=mongodb://devs:gwEg4258npNjUGCArcTmZDF4h3HVY2es@host.docker.internal:27117/admin?ssl=false"
+      - "SnsConfiguration__CobrancaArnTopico=arn:aws:sns:us-east-1:000000000000:SnsCobrancaTopico"
+      - "SnsConfiguration__ContasReceberArnTopico=arn:aws:sns:us-east-1:000000000000:SnsContasReceberTopico"
+      - "AWS__Region=us-east-1"
+      - "AWS_ACCESS_KEY_ID=xxx"
+      - "AWS_SECRET_ACCESS_KEY=xxx"
+
+  microservice-webhook-billing:
+    image: 957296915963.dkr.ecr.us-east-1.amazonaws.com/microservice-webhook-billing:latest
+    depends_on:
+      - "mongo"
+    environment:
+      - "MongoDbConfiguration__ConnectionString=mongodb://devs:gwEg4258npNjUGCArcTmZDF4h3HVY2es@host.docker.internal:27117/admin?ssl=false" 
+      - "MongoCobrancaDbConfiguration__ConnectionString=mongodb://devs:gwEg4258npNjUGCArcTmZDF4h3HVY2es@host.docker.internal:27117/admin?ssl=false"    
+      - "SnsConfiguration__ArnTopico=arn:aws:sns:us-east-1:000000000000:fatura-vindi-sns-topic"
+      - "AWS_DEFAULT_REGION=us-east-1"
+      - "AWS_BUCKET_NAME=fc-bkt-dev-logs-broker"
+      - "AWS_ACCESS_KEY_ID=123"
+      - "AWS_SECRET_ACCESS_KEY=xyz"
+      - "AWS_SECRET_KEY=xyz"
+
+  microservice-integracao-benner:
+    image: 957296915963.dkr.ecr.us-east-1.amazonaws.com/microservice-integracao-benner:latest
+
+  microservice-nota-debito:
+    image: 957296915963.dkr.ecr.us-east-1.amazonaws.com/microservice-nota-debito:latest
+    depends_on:
+      - "mongo"
+    environment:
+      - "MongoDbNotaDebitoConfiguration__ConnectionString=mongodb://devs:gwEg4258npNjUGCArcTmZDF4h3HVY2es@host.docker.internal:27117/admin?ssl=false"
+      - "MongoDbParametroNotaDebitoConfiguration__ConnectionString=mongodb://devs:gwEg4258npNjUGCArcTmZDF4h3HVY2es@host.docker.internal:27117/admin?ssl=false"
+      - "SnsConfiguration__ArnTopico=arn:aws:sns:us-east-1:000000000000:GerarArquivoNotaDebitoSnsTopic"
+      - "AWS__Region=us-east-1"
+      - "AWS_ACCESS_KEY_ID=xxx"
+      - "AWS_SECRET_ACCESS_KEY=xxx"
+
+  mongo:
+    image: mongo:4.2
+    volumes:
+      - "./mongo-fixtures/mongoContasReceber.js:/docker-entrypoint-initdb.d/mongoContasReceber.js"
+      - "./mongo-fixtures/mongoNotaDebito.js:/docker-entrypoint-initdb.d/mongoNotaDebito.js"
+
+  mongo-express:
+    image: mongo-express
+    depends_on:
+      - "mongo"

@@ -1,0 +1,6 @@
+node_modules
+src/services/restClient/consultarRecebimentosParaEmissaoFatura.rest
+.vscode/settings.json
+src/services/restClient/sandboxVindi.rest
+.vscode/settings.json
+.vscode/settings.json

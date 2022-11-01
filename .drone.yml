@@ -1,0 +1,85 @@
+---
+kind: pipeline
+type: docker
+name: Pull request
+
+trigger:
+  event:
+  - pull_request
+
+steps:
+
+- name: Validate CloudFormation template
+  image: amazon/aws-cli
+  commands:
+  - aws cloudformation validate-template --template-body file://template.yml
+
+---
+kind: pipeline
+type: docker
+name: Integration
+
+trigger:
+  branch:
+  - master
+  event:
+  - push
+
+steps:
+
+- name: Install dependencies
+  image: node:12
+  commands:
+  - npm install --only=production
+
+- name: Package and upload Lambda source
+  image: amazon/aws-cli
+  commands:
+  - >
+    aws cloudformation package 
+    --template template.yml 
+    --s3-bucket platform-sam-builds 
+    --s3-prefix ${DRONE_REPO_NAME}/${DRONE_COMMIT:0:7}
+    --output-template template-output.yml
+
+- name: Upload Cloudformation template
+  image: amazon/aws-cli
+  commands:
+  - >
+    aws s3 cp 
+    template-output.yml 
+    s3://platform-sam-builds/${DRONE_REPO_NAME}/${DRONE_COMMIT:0:7}/template-output.yml
+
+---
+kind: pipeline
+type: docker
+name: Deployment
+
+trigger:
+  target:
+  - staging
+  - production
+  event:
+  - promote
+
+steps:
+
+- name: Download Cloudformation template
+  image: amazon/aws-cli
+  commands:
+  - >
+    aws s3 cp 
+    s3://platform-sam-builds/${DRONE_REPO_NAME}/${DRONE_COMMIT:0:7}/template-output.yml
+    template-output.yml
+
+- name: Deploy CloudFormation stack
+  image: amazon/aws-cli
+  commands:
+  - >
+    aws cloudformation deploy
+    --stack-name ${DRONE_REPO_NAME}-${DRONE_DEPLOY_TO}
+    --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND
+    --template-file template-output.yml 
+    --parameter-overrides
+    Environment=${DRONE_DEPLOY_TO} 
+    Owner=billing

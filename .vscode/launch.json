@@ -1,0 +1,40 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Attach to SAM CLI",
+            "type": "node",
+            "request": "attach",
+            "address": "localhost",
+            "port": 5858,
+            "localRoot": "${workspaceRoot}/src",
+            "remoteRoot": ".",
+            "protocol": "inspector",
+            "stopOnEntry": false,
+            "restart": true,
+            "skipFiles": [
+                "<node_internals>/**"
+            ]
+        },
+        {
+            "type": "aws-sam",
+            "request": "direct-invoke",
+            "name": "AWS Tools",
+            "invokeTarget": {
+                "target": "code",
+                "projectRoot": "",
+                "lambdaHandler": "src/handlers/sns-gestao-fatura-vindi.snsGestaoFaturasVindi"
+            },
+            "lambda": {
+                "runtime": "nodejs12.x",
+                "payload": {
+                    "path": "events/event-sns.json"
+                },
+                "environmentVariables": {}
+            }
+        },
+    ]
+}

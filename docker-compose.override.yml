@@ -1,0 +1,41 @@
+version: '3.5'
+
+services:
+  microservice-assinatura:
+    ports:
+      - "32303:80"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+
+  microservice-contas-a-receber:
+    ports:
+      - "32301:80"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+
+  microservice-integracao-benner:
+    ports:
+      - "32238:80"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+ 
+  microservice-webhook-billing:
+    ports:
+      - "32233:80"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development  
+        
+  microservice-nota-debito:
+    ports:
+      - "32302:80"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      
+  mongo:
+    ports:
+      - "27018:27017"
+
+  mongo-express:
+    image: mongo-express
+    ports:
+      - "8081"

@@ -1,0 +1,18 @@
+{
+    "name": "microworker-gestao-fatura-vindi",
+    "version": "0.0.1",
+    "private": true,
+    "dependencies": {
+        "axios": "^0.21.0"
+    },
+    "devDependencies": {
+        "eslint": "^7.6.0",
+        "eslint-config-prettier": "^6.11.0",
+        "eslint-plugin-prettier": "^3.1.4",
+        "jest": "^24.7.1",
+        "prettier": "^2.0.5"
+    },
+    "scripts": {},
+    "repository": "https://github.com/ferias-co/microworker-gestao-fatura-vindi.git",
+    "author": "Férias&Co"
+}

@@ -1,0 +1,146 @@
+AWSTemplateFormatVersion: 2010-09-09
+Transform:
+- AWS::Serverless-2016-10-31
+Parameters:
+  Environment:
+    Type: String
+    Default: development
+  Owner:
+    Type: String
+Resources:
+  BennerFaturaRHSnsTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      Tags:
+      - Key: Name
+        Value: !Ref AWS::StackName
+      - Key: Owner
+        Value: !Ref Owner
+      - Key: Environment
+        Value: !Ref Environment
+  Function:
+    Type: AWS::Serverless::Function
+    Properties:
+      Runtime: nodejs12.x
+      Handler: src/handlers/sns-gestao-fatura-vindi.snsGestaoFaturasVindi
+      Events:
+        SNSTopicEvent:
+          Type: SNS
+          Properties:
+            Topic:
+              Fn::ImportValue:
+                !Sub 'microservice-contas-a-receber-${Environment}-cobranca-sns-topic'
+      MemorySize: 128
+      Timeout: 60
+      Environment:
+        Variables:
+          AWS_SNS_TOPIC_ARN: !Ref BennerFaturaRHSnsTopic
+          NODE_ENV: !Ref Environment
+      Role: !GetAtt Role.Arn
+      VpcConfig:
+        SecurityGroupIds:
+        - !Ref SecurityGroup
+        SubnetIds:
+        - !ImportValue platform-private-subnet-1
+      Tags:
+        Name: !Ref AWS::StackName
+        Owner: !Ref Owner
+        Environment: !Ref Environment
+      DeadLetterQueue:
+        Type: SQS
+        TargetArn:
+          Fn::ImportValue:
+            !Sub 'platform-dead-letter-${Environment}-queue-arn'
+  FunctionFaturaVindi:
+    Type: AWS::Serverless::Function
+    Properties:
+      Runtime: nodejs12.x
+      Handler: src/handlers/sns-gestao-fatura-vindi-avulsa.processar
+      Events:
+        SNSTopicEvent:
+          Type: SNS
+          Properties:
+            Topic:
+              Fn::ImportValue:
+                !Sub 'microservice-webhook-billing-${Environment}-fatura-vindi-sns-topic'
+      MemorySize: 128
+      Timeout: 60
+      Environment:
+        Variables:
+          AWS_SNS_TOPIC_ARN: !Ref BennerFaturaRHSnsTopic
+          NODE_ENV: !Ref Environment
+      Role: !GetAtt Role.Arn
+      VpcConfig:
+        SecurityGroupIds:
+        - !Ref SecurityGroup
+        SubnetIds:
+        - !ImportValue platform-private-subnet-1
+      Tags:
+        Name: !Ref AWS::StackName
+        Owner: !Ref Owner
+        Environment: !Ref Environment
+      DeadLetterQueue:
+        Type: SQS
+        TargetArn:
+          Fn::ImportValue:
+            !Sub 'platform-dead-letter-${Environment}-queue-arn'
+  SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: !Sub 'Rules for ${AWS::StackName}.'
+      VpcId: !ImportValue platform-vpc
+      SecurityGroupEgress:
+      - CidrIp: 0.0.0.0/0
+        IpProtocol: -1
+        Description: Allow all outbound traffic.
+      Tags:
+      - Key: Name
+        Value: !Ref AWS::StackName
+      - Key: Owner
+        Value: !Ref Owner
+      - Key: Environment
+        Value: !Ref Environment
+  Role:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Ref AWS::StackName
+      Path: /
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: 
+            - 'lambda.amazonaws.com'
+          Action:
+          - 'sts:AssumeRole'
+      Policies:
+      - PolicyName: !Ref AWS::StackName
+        PolicyDocument:
+          Version: 2012-10-17
+          Statement:
+          - Effect: Allow
+            Action:
+            - 'logs:CreateLogGroup'
+            - 'logs:CreateLogStream'
+            - 'logs:PutLogEvents'
+            - 'ec2:CreateNetworkInterface'
+            - 'ec2:DescribeNetworkInterfaces'
+            - 'ec2:DeleteNetworkInterface'
+            Resource: '*'
+          - Effect: Allow
+            Action:
+            - 'sns:Publish'
+            Resource: 
+              - !Ref BennerFaturaRHSnsTopic
+          - Effect: Allow
+            Action:
+            - 'sqs:SendMessage'
+            Resource: 
+            - Fn::ImportValue:
+                !Sub 'platform-dead-letter-${Environment}-queue-arn'
+Outputs:
+  BennerFaturaRHSnsTopic:
+    Value: !Ref BennerFaturaRHSnsTopic
+    Export:
+      Name: !Sub '${AWS::StackName}-benner-fatura-rh-sns-topic'
